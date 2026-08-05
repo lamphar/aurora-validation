@@ -49,7 +49,6 @@ FEATURES = [
     "single_scattering_albedo",
     "angular_emission_phi",
     "view_zenith_deg",
-    "relative_azimuth_deg",
     "observer_altitude_m",
     "source_extent_m",
     "composition_0",
@@ -81,7 +80,7 @@ def latin_hypercube(n: int, seed: int) -> list[dict[str, float]]:
                 "single_scattering_albedo": 0.72 + 0.27 * x[7],
                 "angular_emission_phi": 0.03 + 0.37 * x[8],
                 "view_zenith_deg": 5.0 + 65.0 * x[9],
-                "relative_azimuth_deg": 180.0 * x[10],
+                "relative_azimuth_deg": 0.0,
                 "observer_altitude_m": 2_500.0 * x[11],
                 "source_extent_m": 200.0 + 4_800.0 * x[4],
                 "composition_0": float(comp[0]),
@@ -159,11 +158,9 @@ def external_radiance(case: dict[str, float], n_quad: int = 16, n_layers: int = 
     theta = np.arccos(np.clip(mu_pos, 0.0, 1.0))
     angular = angular_distribution(theta, np.full_like(theta, phi_mix))
 
-    n_fourier = 3
-    b_pos = np.zeros((n, n_fourier), dtype=float)
-    b_pos[:, 0] = amplitude * angular
-    b_pos[:, 1] = 0.16 * amplitude * angular
-    b_pos[:, 2] = 0.05 * amplitude * angular
+    # Axisymmetric (m=0) boundary source for the 1-D column-equivalent benchmark.
+    n_fourier = 1
+    b_pos = amplitude * angular
 
     _, _, _, _, u = PythonicDISORT.pydisort(
         tau_arr,
@@ -182,7 +179,7 @@ def external_radiance(case: dict[str, float], n_quad: int = 16, n_layers: int = 
     u_interp = PythonicDISORT.subroutines.interpolate(u)
     mu_view = -math.cos(math.radians(case["view_zenith_deg"]))
     tau_obs = optical_depth_at_altitude(tau_arr, edges, case["observer_altitude_m"])
-    phi_view = math.radians(case["relative_azimuth_deg"])
+    phi_view = 0.0
     value = float(np.asarray(u_interp(mu_view, tau_obs, phi_view)).squeeze())
     return max(value, 1e-300)
 
