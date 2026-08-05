@@ -178,7 +178,6 @@ def external_radiance(case: dict[str, float], n_quad: int = 16, n_layers: int = 
         b_pos=b_pos,
         b_neg=0.0,
         BDRF_Fourier_modes=[case["surface_albedo"]],
-        cache_asso_leg="no_mu0",
     )
     u_interp = PythonicDISORT.subroutines.interpolate(u)
     mu_view = -math.cos(math.radians(case["view_zenith_deg"]))
