@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths:
+      - "external_validation/**"
+      - "aurora_source/**"
+      - "requirements.txt"
+      - ".github/workflows/external-validation.yml"
 
 permissions:
   contents: read
@@ -16,79 +21,47 @@ jobs:
   pythonicdisort-benchmark:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-
     steps:
-      - name: Download repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
-      - name: Locate uploaded validation package
-        shell: bash
+      - name: Install pinned dependencies
         run: |
-          ROOT="$(
-            find . -type f -name requirements.txt |
-            while read -r FILE; do
-              DIR="$(dirname "$FILE")"
-              if [ -d "$DIR/external_validation" ] && [ -d "$DIR/aurora_source" ]; then
-                echo "$DIR"
-                break
-              fi
-            done
-          )"
-
-          if [ -z "$ROOT" ]; then
-            echo "No validation package was found."
-            find . -maxdepth 4 -type f
-            exit 1
-          fi
-
-          echo "PROJECT_ROOT=${ROOT#./}" >> "$GITHUB_ENV"
-          echo "Validation package found at: $ROOT"
-
-      - name: Install PythonicDISORT and dependencies
-        shell: bash
-        run: |
-          cd "$PROJECT_ROOT"
           python -m pip install --upgrade pip
           python -m pip install --requirement requirements.txt
-          mkdir -p validation_artifacts
-          python -m pip freeze > validation_artifacts/installed-packages.txt
+          python -m pip freeze | tee installed-packages.txt
 
-      - name: Run recognized external benchmark
+      - name: Run recognized external-solver benchmark
+        id: benchmark
         continue-on-error: true
-        shell: bash
         run: |
-          cd "$PROJECT_ROOT"
+          mkdir -p validation_artifacts
           python external_validation/run_pythonicdisort_benchmark.py \
             --output validation_artifacts \
             --cases 72 \
-            --seed 20260805 \
-            2>&1 | tee validation_artifacts/execution.log
+            --seed 20260805 2>&1 | tee validation_artifacts/execution.log
 
-      - name: Generate provenance and checksums
+      - name: Create provenance and checksums
         if: always()
-        shell: bash
         run: |
-          cd "$PROJECT_ROOT"
           python external_validation/finalize_artifacts.py validation_artifacts
 
-      - name: Upload validation evidence
+      - name: Upload complete evidence package
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: aurora-pythonicdisort-validation
-          path: ${{ env.PROJECT_ROOT }}/validation_artifacts/
+          path: validation_artifacts/
           if-no-files-found: error
           retention-days: 30
 
-      - name: Enforce scientific validation gate
+      - name: Enforce scientific gate
         if: always()
-        shell: bash
         run: |
-          cd "$PROJECT_ROOT"
-          python external_validation/enforce_gate.py \
-            validation_artifacts/benchmark_summary.json
+          python external_validation/enforce_gate.py validation_artifacts/benchmark_summary.json
