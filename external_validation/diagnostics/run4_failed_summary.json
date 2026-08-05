@@ -1,0 +1,19 @@
+{
+  "solver": "PythonicDISORT",
+  "solver_version": "1.7",
+  "workflow_run": 30999462835,
+  "artifact_id": 8927606980,
+  "artifact_sha256": "51ce2c8df254c4306f2fe36e670e0688c5369312a8e9bf0a167ee3847f44b4a3",
+  "commit": "63cbdd92ce079685490c4a341df0158b732a5eed",
+  "status": "failed diagnostic",
+  "reason": "The external solver executed all 72 cases, but the benchmark compared unmatched physical problems: a plane-parallel boundary source in PythonicDISORT against AURORA's localized-source geometric kernel, with different vertical aerosol profiles, viewing geometry, surface treatment, and normalization.",
+  "metrics": {
+    "selected_holdout_relative_rmse": 4.886093145906051,
+    "holdout_median_absolute_relative_error": 0.8534630490840937,
+    "holdout_p95_absolute_relative_error": 1.884792123797208,
+    "numerical_convergence_p95": 0.04004360225440221,
+    "validity_domain_fraction_all_cases": 0.625,
+    "validation_pass": false
+  },
+  "preservation_note": "This record is retained as a diagnostic failure. Its thresholds are not relaxed or retroactively changed. The successor benchmark changes physical correspondence so both solvers address the same 1-D problem."
+}
